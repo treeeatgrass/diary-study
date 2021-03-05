@@ -1,0 +1,16 @@
+rawdata -> clean data to be upload to MendeleyData
+
+Problem: too many missing data (more than 50%) for the qualitative questions
+solution: check the pencil-and-paper questionnaire and realized that lots of the answers were not entered to the rawdata file.
+
+Problem: data entry errors (such as 12 for a 5-point Likert scale item)
+Solution: arrange each variable from large to small and correct the obvious errors (e.g., replace 22 with 2). 
+
+Problem: some data entry errors were not obvious (e.g., 13 on a 5-point Likert scale item)
+Solution: check the pencil-and-paper questionnaires to find the correct entry.
+
+Problem: same response for consequtive items, which might indicate careless responses.
+Solution: use the "careless"  package in R to calculate the number of consecutive responses.
+
+Problem: not many incidence of certain behavior (e.g., used smartphone yesterday after unhappy event)
+Solution: re-code the qualitative data into more frequent behaviors (e.g., used electronic devices yesterday after unhappy event).
