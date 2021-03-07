@@ -3,11 +3,10 @@
 
 library(tidyverse)
 library(lme4)
-library(foreign)
 
 #load excel and SPSS data into R environment
-level2 <- read.spss("level2data.sav", use.value.label=FALSE, to.data.frame=TRUE)
-level1 <- read.spss("level1data.sav", use.value.label=FALSE, to.data.frame=TRUE)
+level1 <- read.csv("level1data.csv")
+level2 <- read.csv("level2data.csv")
 
 ##create variables for analyses
 #level1 data processing: compute a variable from existing columns
