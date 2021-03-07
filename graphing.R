@@ -1,8 +1,8 @@
 library(tidyverse)
 
 df <- df %>% 
-  mutate(posbi = ifelse(POS5.2 <=1, 0L, 1L)) %>% 
-  mutate(negbi = ifelse(NEG5.2 <=1, 0L, 1L)) %>% 
+  mutate(posbi = ifelse(Cpos <=0, 0L, 1L)) %>% 
+  mutate(negbi = ifelse(Cneg <=0, 0L, 1L)) %>% 
   mutate(posb = recode(
     posbi,
     `1` = "present",`0` = "absent"
@@ -13,7 +13,7 @@ df <- df %>%
   ))
 
 ggplot(data = df)+
-  geom_histogram(aes(x = POS5.2))
+  geom_histogram(aes(x = Cpos))
 
 pos <- ggplot(df, aes(x = CsoAnxiety, y = device5)) + 
   geom_point(color="red", position = position_jitter(height = .02)) +
@@ -28,4 +28,3 @@ neg <- ggplot(df, aes(x = CsoAnxiety, y = device5)) +
               method="glm", method.args=list(family="binomial"))+
   xlab("Social anxiety")+ ylab("Used a device when unhappy")
 print(neg)
-
