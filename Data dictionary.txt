@@ -1,0 +1,52 @@
+This document describes the field, rows, columns in level1data.csv and level2data.csv
+
+Level1data.csv:
+note: for open-end questions, irrelevant answers were coded as NA;
+What does each row mean? Each row represents the responses to a daily diary survey. Each student could fill up to 15 daily diary survey. Students who completed less than 2 daily diary surveys were excluded from the clean dataset.
+What does each column mean? Each column represents a question item on the daily diary survey. 
+What are the limits, boundaries, and expected values of each field? Detailed answer to this question are listed below:
+WeekdayOrWeekend: 1 = weekday, 2 = weekend;
+Frequency: integer, lower limit = 0, no upper limit;
+LengthOfTime: double, lower limit = 0, no upper limit;
+DidNotUseMobilePhone: 1 = did not use mobile phone yesterday, 0 = used mobile phone yesterday;
+FirstDailyPhoneUsage: integer, 1-4;
+FirstMotivation: categorical variable with 7 nominal categories;
+BeforeUseDoingWhat: open-end question, coded into 4 categories, integer value 1-4;
+WhyStopUsing: open-end question, coded into 5 categories, integer value (11, 12, 21, 22, 3);
+po-interested ~ po_proud: 5-point Likert scale, integer, 1-5;
+UnhappyEvent: open-end question, coded into 8 categories, integer value (11, 12, 13, 21, 22, 23, 31, 4);
+UnhappyEventRelateToPhone: open-end question, coded into 3 categories, integer value (11, 12, 21);
+UnhappyEvent_interested ~ UnhappyEvent_afraid: 5-point Likert scale, integer, 1-5;
+UnhappyEvent_regulation: open-end question, coded as 3 categories (1, 2, 3); 
+UnhappyEventRegulation_device: open-end question, coded as 2 categories (1,0);
+UnhappyEventRegulation_phone: open-end question, coded as 3 categories (11, 12, 21);
+HappyEvent: open-end question, coded into 8 categories, integer value (11, 12, 13, 21, 22, 23, 31, 4);
+HappyEventRelateToPhone: open-end question, coded into 3 categories, integer value (11, 12, 21);
+HappyEvent_interested ~ HappyEvent_afraid: 5-point Likert scale, integer, 1-5;
+HappyEvent_regulation: open-end question, coded as 3 categories (1, 2, 3); 
+HappyEventRegulation_device: open-end question, coded as 2 categories (1,0);
+HappyEventRegulation_phone: open-end question, coded as 3 categories (11, 12, 21);
+
+level2data.csv:
+What does each row mean? Each row represent a participant's response to the one-time questionnaire;
+What does each column mean? Each column represent one question on the one-time questionnaire;
+What are the limits, boundaries, and expected values of each field? Detailed answer to this question are listed below:
+TimeOfCollectingSampleYear: four-digit integer, 2018;
+TimeOfCollectingSampleMonth: two-digit integer, 12;
+TimeOfCollectingSampleDay: two-digit integer, (20, 30, 31);
+AgeAtFirstPhoneUse: integer, lower limit = 1, upper limit = 18;
+FirstPhoneUsage: integer, 1-4;
+OnlineSocialSupport1 ~ OnlineSocialSupport11: 5-point Likert scale, integer 1-5;
+EmotionRegulationEfficacy1 ~ EmotionRegulationEfficacy12: 5-point Likert scale, integer 1-5;
+Addiction1 ~ Addiction10: 6-point Likert scale, integer 1-6;
+SocialAnxiety1 ~ SocialAnxiety10: 3-point Likert scale, integer (0, 1, 2);
+SocialSelfEfficacy1 ~ SocialSelfEfficacy6:5-point Likert scale, integer 1-5;
+ParentalSchoolInvolvement1 ~ ParentalSchoolInvolvement10: 5-point Likert scale, integer 1-5;
+SelfControl1 ~ SelfControl6: 5-point Likert scale, integer 1-5;
+OfflineSocialSupport1 ~ OfflineSocialSupport11: 5-point Likert scale, integer 1-5;
+Hukou: categorical variable, (1, 2, 3);
+Age: integer, lower limit = 1, upper limit = 18;
+Grade: integer, (1, 2);
+Class: integer, (1, 4, 7);
+Gender: integer, (1, 2);
+
