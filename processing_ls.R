@@ -1,5 +1,3 @@
-setwd("C:/Users/DELL/Documents/research/data/2019data")
-
 install.packages ("devtools")
 install.packages ("careless")
 
