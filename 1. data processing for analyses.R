@@ -1,12 +1,14 @@
-# install.packages("tidyverse")
-# install.packages("lme4")
-
+library(here)
 library(tidyverse)
 library(lme4)
 
-#load excel and SPSS data into R environment
-level1 <- read.csv("level1data.csv")
-level2 <- read.csv("level2data.csv")
+here()
+#load excel data into R environment
+here("level1data.csv")
+here("level2data.csv")
+
+level1 <- read.csv(here("level1data.csv"))
+level2 <- read.csv(here("level2data.csv"))
 
 ##create variables for analyses
 #level1 data processing: compute a variable from existing columns
