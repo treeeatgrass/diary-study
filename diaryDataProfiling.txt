@@ -14,3 +14,9 @@ Solution: use the "careless"  package in R to calculate the number of consecutiv
 
 Problem: not many incidence of certain behavior (e.g., used smartphone yesterday after unhappy event)
 Solution: re-code the qualitative data into more frequent behaviors (e.g., used electronic devices yesterday after unhappy event).
+
+Problem: some values in FirstMotivation are lower case letters and others are upper case letters.
+Solution: recode a into A, recode b into B, recode c into C, recode d into D, recode e into E, recode f into F.
+
+Problem: this was a 15-day daily diary study but some participants only provided valid data for 0 day or 1 day.
+Solution: delete those participants from level1 data.
