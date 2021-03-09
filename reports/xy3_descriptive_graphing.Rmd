@@ -1,0 +1,154 @@
+---
+title: "xy_descriptive_descriptive graphs"
+author: "EF"
+date: "3/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(RCurl)
+library(tidyverse)
+library(lme4)
+library(here)
+```
+
+# Descriptive statistics for XY
+
+**Part3**
+
+```{r echo=FALSE}
+level1 <- read.csv(here("level1data.csv"))
+level2 <- read.csv(here("level2data.csv"))
+
+##create variables for analyses
+#level1 data processing: compute a variable from existing columns
+level1 <- level1 %>% 
+  mutate(POS4.3 = rowMeans(level1[,c('po_interested','po_excited','po_proud')], na.rm=TRUE)) %>% 
+  mutate(NEG4.3 = rowMeans(level1[,c('ne_sad','ne_ashamed','ne_irritable','ne_nervous',
+                                     'ne_guilty','ne_scared','ne_afraid')], na.rm=TRUE)) %>% 
+  mutate(POS5.2 = rowMeans(level1[,c('UnhappyEvent_interested','UnhappyEvent_excited','UnhappyEvent_proud')], na.rm=TRUE)) %>% 
+  mutate(NEG5.2 = rowMeans(level1[,c('UnhappyEvent_sad','UnhappyEvent_ashamed','UnhappyEvent_irritable','UnhappyEvent_nervous',
+                                 'UnhappyEvent_guilty','UnhappyEvent_scared','UnhappyEvent_afraid')], na.rm=TRUE)) %>% 
+  mutate(POS6.2 = rowMeans(level1[,c('HappyEvent_interested','HappyEvent_excited','HappyEvent_proud')], na.rm=TRUE)) %>% 
+  mutate(NEG6.2 = rowMeans(level1[,c('HappyEvent_sad','HappyEvent_ashamed','HappyEvent_irritable','HappyEvent_nervous',
+                                 'HappyEvent_guilty','HappyEvent_scared','HappyEvent_afraid')], na.rm=TRUE)) %>% 
+#recode a categorical variable into a new binary variable
+  mutate(UnhappySocial = case_when(UnhappyEvent == 21 ~ 1L,
+                                   UnhappyEvent == 22 ~ 1L,
+                                   UnhappyEvent == 23 ~ 1L,
+                                   UnhappyEvent == 11 ~ 0L,
+                                   UnhappyEvent == 12 ~ 0L,
+                                   UnhappyEvent == 13 ~ 0L,
+                                   UnhappyEvent == 3 ~ 0L,
+                                   UnhappyEvent == 4 ~ 0L)) %>% 
+  mutate(device5 = case_when(UnhappyEventRegulation_phone == 11 ~ 1L,
+                             UnhappyEventRegulation_phone == 12 ~ 0L,
+                             UnhappyEventRegulation_phone == 21 ~ 0L)) %>% 
+  mutate(HappySocial = case_when(HappyEvent == 21 ~ 1L,
+                                   HappyEvent == 22 ~ 1L,
+                                   HappyEvent == 23 ~ 1L,
+                                   HappyEvent == 11 ~ 0L,
+                                   HappyEvent == 12 ~ 0L,
+                                   HappyEvent == 13 ~ 0L,
+                                   HappyEvent == 3 ~ 0L,
+                                   HappyEvent == 4 ~ 0L)) %>% 
+  mutate(device6 = case_when(HappyEventRegulation_phone == 11 ~ 1L,
+                             HappyEventRegulation_phone == 12 ~ 0L,
+                             HappyEventRegulation_phone == 21 ~ 0L))
+
+
+#Level2 data processing: compute a variable from existing columns
+level2 <- level2 %>% 
+  mutate(online = rowMeans(level2[,c('OnlineSocialSupport1','OnlineSocialSupport2','OnlineSocialSupport3','OnlineSocialSupport4',
+                                 'OnlineSocialSupport5','OnlineSocialSupport6','OnlineSocialSupport7','OnlineSocialSupport8',
+                                 'OnlineSocialSupport9','OnlineSocialSupport10','OnlineSocialSupport11')], na.rm=TRUE)) %>% 
+  mutate(offline = rowMeans(level2[,c('OfflineSocialSupport1','OfflineSocialSupport2','OfflineSocialSupport3',
+                                      'OfflineSocialSupport4','OfflineSocialSupport5','OfflineSocialSupport6',
+                                      'OfflineSocialSupport7','OfflineSocialSupport8','OfflineSocialSupport9',
+                                      'OfflineSocialSupport10','OfflineSocialSupport11')], na.rm=TRUE)) %>% 
+  mutate(soAnxiety = rowMeans(level2[,c('SocialAnxiety1','SocialAnxiety2','SocialAnxiety3','SocialAnxiety4',
+                                        'SocialAnxiety5','SocialAnxiety6','SocialAnxiety7','SocialAnxiety8',
+                                        'SocialAnxiety9','SocialAnxiety10')], na.rm = TRUE)) %>% 
+  mutate(soEfficacy = rowMeans(level2[,c('SocialSelfEfficacy1','SocialSelfEfficacy2','SocialSelfEfficacy3','SocialSelfEfficacy4',
+                                        'SocialSelfEfficacy5','SocialSelfEfficacy6')], na.rm = TRUE)) %>% 
+  mutate(addiction = rowMeans(level2[,c('Addiction1','Addiction2','Addiction3','Addiction4','Addiction5',
+                                       'Addiction6','Addiction7','Addiction8','Addiction9','Addiction10')], na.rm = TRUE)) %>% 
+  mutate(paInvolve = rowMeans(level2[,c('ParentalSchoolInvolvement1','ParentalSchoolInvolvement2','ParentalSchoolInvolvement3',
+                                        'ParentalSchoolInvolvement4','ParentalSchoolInvolvement5','ParentalSchoolInvolvement6',
+                                        'ParentalSchoolInvolvement7','ParentalSchoolInvolvement8','ParentalSchoolInvolvement9',
+                                        'ParentalSchoolInvolvement10')], na.rm = TRUE)) %>% 
+  mutate(selfControl = rowMeans(level2[,c('SelfControl1','SelfControl2','SelfControl3','SelfControl4','SelfControl5',
+                                          'SelfControl6')], na.rm = TRUE)) %>% 
+  mutate(emoEfficacy = rowMeans(level2[,c('EmotionRegulationEfficacy1','EmotionRegulationEfficacy2','EmotionRegulationEfficacy3',
+                                          'EmotionRegulationEfficacy4','EmotionRegulationEfficacy5','EmotionRegulationEfficacy6',
+                                          'EmotionRegulationEfficacy7','EmotionRegulationEfficacy8','EmotionRegulationEfficacy9',
+                                          'EmotionRegulationEfficacy10','EmotionRegulationEfficacy11','EmotionRegulationEfficacy12')], na.rm = TRUE)) %>% 
+  #recode a numeric variable to a new binary variable
+  mutate(gender = recode(
+    Gender,
+    `1` = 0L, `2` = 1L
+  ))
+
+#recode nominal variables and center continuous variables
+level1 <- level1%>% 
+  mutate(motive = case_when(FirstMotivation == 1 ~ "bored",
+                            FirstMotivation == 2 ~ "study",
+                            FirstMotivation == 3 ~ "emerfency",
+                            FirstMotivation == 4 ~ "subconscious",
+                            FirstMotivation == 5 ~ "not in learning state",
+                            FirstMotivation == 6 ~ "bad mood")) %>% 
+  mutate(posbi = ifelse(POS4.3 <=1, 0L, 1L)) %>% 
+  mutate(negbi = ifelse(NEG4.3 <=1, 0L, 1L)) %>% 
+  mutate(motivef = factor(
+    motive,
+    levels = c("subconscious","bored","study","emergency","not in learning state","bad mood")
+  ))
+
+
+
+#join certain level1 and level2 variables.
+df1 <-  level1 %>% 
+  select(ID, posbi, negbi, motivef, HappySocial:device6)
+
+df2 <- level2 %>% 
+  select(ID, addiction, Age, gender, Hukou,Grade, AgeAtFirstPhoneUse, WeekdaysPhoneUse, WeekendPhoneUse)
+
+df <- df1 %>% 
+  select(-HappySocial, -device6) %>% 
+  left_join(df2, by = "ID")
+
+df <- df %>% 
+  mutate(Caddiction = addiction - mean(addiction)) %>% 
+  mutate(CAge = Age - mean(Age))
+```
+
+## Frequency histograms
+
+The height of each bar represent the counts of that value
+
+```{r echo=FALSE}
+ggplot(data = df) + geom_histogram(aes(x = addiction))
+ggplot(data = df) + geom_histogram(aes(x = Age))
+ggplot(data = df) + geom_histogram(aes(x = AgeAtFirstPhoneUse))
+ggplot(data = df) + geom_histogram(aes(x = WeekdaysPhoneUse))
+ggplot(data = df) + geom_histogram(aes(x = WeekendPhoneUse))
+```
+
+###Plot the probability of present of positive emotion by motive, grouped by gender
+```{r}
+pos <- ggplot(df, aes(x = Caddiction, y = posbi)) + 
+  geom_point(color="red", position = position_jitter(height = .02)) +
+  geom_smooth(mapping = aes(colour = motivef),
+              method="glm", method.args=list(family="binomial"))+
+  xlab("Addictive smartphone use")+ ylab("Presence of positive emotions")
+print(pos)
+
+neg <- ggplot(df, aes(x = Caddiction, y = negbi)) + 
+  geom_point(color="red", position = position_jitter(height = .02)) +
+  geom_smooth(mapping = aes(colour = motivef),
+              method="glm", method.args=list(family="binomial"))+
+  xlab("Addictive smartphone use")+ ylab("Presence of negative emotions")
+print(neg)
+```
+

@@ -1,0 +1,562 @@
+---
+title: "xy_descriptive_association between variables"
+author: "EF"
+date: "3/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(RCurl)
+library(tidyverse)
+library(lme4)
+library(here)
+```
+
+# Descriptive statistical analysis
+
+**Part2**
+```{r echo=FALSE}
+level1 <- read.csv(here("level1data.csv"))
+level2 <- read.csv(here("level2data.csv"))
+```
+
+
+```{r echo=FALSE}
+##create variables for analyses
+#level1 data processing: compute a variable from existing columns
+level1 <- level1 %>% 
+  mutate(POS4.3 = rowMeans(level1[,c('po_interested','po_excited','po_proud')], na.rm=TRUE)) %>% 
+  mutate(NEG4.3 = rowMeans(level1[,c('ne_sad','ne_ashamed','ne_irritable','ne_nervous',
+                                     'ne_guilty','ne_scared','ne_afraid')], na.rm=TRUE)) %>% 
+  mutate(POS5.2 = rowMeans(level1[,c('UnhappyEvent_interested','UnhappyEvent_excited','UnhappyEvent_proud')], na.rm=TRUE)) %>% 
+  mutate(NEG5.2 = rowMeans(level1[,c('UnhappyEvent_sad','UnhappyEvent_ashamed','UnhappyEvent_irritable','UnhappyEvent_nervous',
+                                 'UnhappyEvent_guilty','UnhappyEvent_scared','UnhappyEvent_afraid')], na.rm=TRUE)) %>% 
+  mutate(POS6.2 = rowMeans(level1[,c('HappyEvent_interested','HappyEvent_excited','HappyEvent_proud')], na.rm=TRUE)) %>% 
+  mutate(NEG6.2 = rowMeans(level1[,c('HappyEvent_sad','HappyEvent_ashamed','HappyEvent_irritable','HappyEvent_nervous',
+                                 'HappyEvent_guilty','HappyEvent_scared','HappyEvent_afraid')], na.rm=TRUE)) %>% 
+#recode a categorical variable into a new binary variable
+  mutate(UnhappySocial = case_when(UnhappyEvent == 21 ~ 1L,
+                                   UnhappyEvent == 22 ~ 1L,
+                                   UnhappyEvent == 23 ~ 1L,
+                                   UnhappyEvent == 11 ~ 0L,
+                                   UnhappyEvent == 12 ~ 0L,
+                                   UnhappyEvent == 13 ~ 0L,
+                                   UnhappyEvent == 3 ~ 0L,
+                                   UnhappyEvent == 4 ~ 0L)) %>% 
+  mutate(device5 = case_when(UnhappyEventRegulation_phone == 11 ~ 1L,
+                             UnhappyEventRegulation_phone == 12 ~ 0L,
+                             UnhappyEventRegulation_phone == 21 ~ 0L)) %>% 
+  mutate(HappySocial = case_when(HappyEvent == 21 ~ 1L,
+                                   HappyEvent == 22 ~ 1L,
+                                   HappyEvent == 23 ~ 1L,
+                                   HappyEvent == 11 ~ 0L,
+                                   HappyEvent == 12 ~ 0L,
+                                   HappyEvent == 13 ~ 0L,
+                                   HappyEvent == 3 ~ 0L,
+                                   HappyEvent == 4 ~ 0L)) %>% 
+  mutate(device6 = case_when(HappyEventRegulation_phone == 11 ~ 1L,
+                             HappyEventRegulation_phone == 12 ~ 0L,
+                             HappyEventRegulation_phone == 21 ~ 0L))
+
+
+#Level2 data processing: compute a variable from existing columns
+level2 <- level2 %>% 
+  mutate(online = rowMeans(level2[,c('OnlineSocialSupport1','OnlineSocialSupport2','OnlineSocialSupport3','OnlineSocialSupport4',
+                                 'OnlineSocialSupport5','OnlineSocialSupport6','OnlineSocialSupport7','OnlineSocialSupport8',
+                                 'OnlineSocialSupport9','OnlineSocialSupport10','OnlineSocialSupport11')], na.rm=TRUE)) %>% 
+  mutate(offline = rowMeans(level2[,c('OfflineSocialSupport1','OfflineSocialSupport2','OfflineSocialSupport3',
+                                      'OfflineSocialSupport4','OfflineSocialSupport5','OfflineSocialSupport6',
+                                      'OfflineSocialSupport7','OfflineSocialSupport8','OfflineSocialSupport9',
+                                      'OfflineSocialSupport10','OfflineSocialSupport11')], na.rm=TRUE)) %>% 
+  mutate(soAnxiety = rowMeans(level2[,c('SocialAnxiety1','SocialAnxiety2','SocialAnxiety3','SocialAnxiety4',
+                                        'SocialAnxiety5','SocialAnxiety6','SocialAnxiety7','SocialAnxiety8',
+                                        'SocialAnxiety9','SocialAnxiety10')], na.rm = TRUE)) %>% 
+  mutate(soEfficacy = rowMeans(level2[,c('SocialSelfEfficacy1','SocialSelfEfficacy2','SocialSelfEfficacy3','SocialSelfEfficacy4',
+                                        'SocialSelfEfficacy5','SocialSelfEfficacy6')], na.rm = TRUE)) %>% 
+  mutate(addiction = rowMeans(level2[,c('Addiction1','Addiction2','Addiction3','Addiction4','Addiction5',
+                                       'Addiction6','Addiction7','Addiction8','Addiction9','Addiction10')], na.rm = TRUE)) %>% 
+  mutate(paInvolve = rowMeans(level2[,c('ParentalSchoolInvolvement1','ParentalSchoolInvolvement2','ParentalSchoolInvolvement3',
+                                        'ParentalSchoolInvolvement4','ParentalSchoolInvolvement5','ParentalSchoolInvolvement6',
+                                        'ParentalSchoolInvolvement7','ParentalSchoolInvolvement8','ParentalSchoolInvolvement9',
+                                        'ParentalSchoolInvolvement10')], na.rm = TRUE)) %>% 
+  mutate(selfControl = rowMeans(level2[,c('SelfControl1','SelfControl2','SelfControl3','SelfControl4','SelfControl5',
+                                          'SelfControl6')], na.rm = TRUE)) %>% 
+  mutate(emoEfficacy = rowMeans(level2[,c('EmotionRegulationEfficacy1','EmotionRegulationEfficacy2','EmotionRegulationEfficacy3',
+                                          'EmotionRegulationEfficacy4','EmotionRegulationEfficacy5','EmotionRegulationEfficacy6',
+                                          'EmotionRegulationEfficacy7','EmotionRegulationEfficacy8','EmotionRegulationEfficacy9',
+                                          'EmotionRegulationEfficacy10','EmotionRegulationEfficacy11','EmotionRegulationEfficacy12')], na.rm = TRUE)) %>% 
+  #recode a numeric variable to a new binary variable
+  mutate(gender = recode(
+    Gender,
+    `1` = 0L, `2` = 1L
+  ))
+
+#recode nominal variables and center continuous variables
+level1 <- level1 %>% 
+  mutate(motive = recode(
+    FirstMotivation,
+    d = "subconscious", D = "subconscious", a = "bored", A = "bored", c = "emergency", C = "emergency",
+    b = "learning", B = "learning", 
+    e = "not in learning state", E = "not in learning state", 
+    F = "bad mood", f = "bad mood")
+  ) %>% 
+  mutate(posbi = ifelse(POS4.3 <=1, 0L, 1L)) %>% 
+  mutate(negbi = ifelse(NEG4.3 <=1, 0L, 1L)) %>% 
+  mutate_if(is.list, as.factor)%>%
+  mutate(motivef = factor(
+    motive,
+    levels = c("subconscious", "bad mood",  "bored", "emergency", "learning",  "not in learning state")
+  ))
+
+
+
+#join certain level1 and level2 variables.
+df1 <-  level1 %>% 
+  select(ID, posbi, negbi, motivef, HappySocial:device6)
+
+df2 <- level2 %>% 
+  select(ID, addiction, Age, gender, Hukou,Grade, AgeAtFirstPhoneUse, WeekdaysPhoneUse, WeekendPhoneUse)
+
+df <- df1 %>% 
+  select(-HappySocial, -device6) %>% 
+  left_join(df2, by = "ID")
+
+df <- df %>% 
+  mutate(Caddiction = addiction - mean(addiction)) %>% 
+  mutate(CAge = Age - mean(Age))
+```
+
+##Associations between two categorical variables
+```{r echo=FALSE}
+chisq.test(df$posbi,df$gender)
+chisq.test(df$posbi,df$Hukou)
+chisq.test(df$posbi,df$Grade)
+chisq.test(df$negbi,df$gender)
+chisq.test(df$negbi,df$Hukou)
+chisq.test(df$negbi,df$Grade)
+chisq.test(df$gender,df$Hukou)
+chisq.test(df$gender,df$Grade)
+chisq.test(df$Hukou,df$Grade)
+```
+
+##Associations between one categorical variable and one continous variable
+
+###Association between Positive emotion and addiction
+```{r echo=FALSE}
+Posbi_1 <- 
+  df %>% 
+  filter(posbi == 1) %>% 
+  select(addiction) %>% 
+  pull()
+
+Posbi_0 <- 
+  df %>% 
+  filter(posbi == 0) %>% 
+  select(addiction) %>% 
+  pull()
+
+fit1 <- t.test(Posbi_1, Posbi_0)
+fit1
+```
+
+###Association between Positive emotion and Age
+```{r echo=FALSE}
+Posbi_1 <- 
+  df %>% 
+  filter(posbi == 1) %>% 
+  select(Age) %>% 
+  pull()
+
+Posbi_0 <- 
+  df %>% 
+  filter(posbi == 0) %>% 
+  select(Age) %>% 
+  pull()
+
+fit1 <- t.test(Posbi_1, Posbi_0)
+fit1
+```
+
+###Association between positive emotion and AgeAtFirstPhoneUse
+```{r echo=FALSE}
+Posbi_1 <- 
+  df %>% 
+  filter(posbi == 1) %>% 
+  select(AgeAtFirstPhoneUse) %>% 
+  pull()
+
+Posbi_0 <- 
+  df %>% 
+  filter(posbi == 0) %>% 
+  select(AgeAtFirstPhoneUse) %>% 
+  pull()
+
+fit1 <- t.test(Posbi_1, Posbi_0)
+fit1
+```
+
+###Association between positive emotion and the number hours that the participant used phone during weekdays
+```{r echo=FALSE}
+Posbi_1 <- 
+  df %>% 
+  filter(posbi == 1) %>% 
+  select(WeekdaysPhoneUse) %>% 
+  pull()
+
+Posbi_0 <- 
+  df %>% 
+  filter(posbi == 0) %>% 
+  select(WeekdaysPhoneUse) %>% 
+  pull()
+
+fit1 <- t.test(Posbi_1, Posbi_0)
+fit1
+```
+
+###Association between positive emotion and the number of hours that the participant used phone during weekends
+```{r echo=FALSE}
+Posbi_1 <- 
+  df %>% 
+  filter(posbi == 1) %>% 
+  select(WeekendPhoneUse) %>% 
+  pull()
+
+Posbi_0 <- 
+  df %>% 
+  filter(posbi == 0) %>% 
+  select(WeekendPhoneUse) %>% 
+  pull()
+
+fit1 <- t.test(Posbi_1, Posbi_0)
+fit1
+```
+
+###Association between negative emotion and participant's score on addictive smartphone use
+```{r echo=FALSE}
+Negbi_1 <- 
+  df %>% 
+  filter(negbi == 1) %>% 
+  select(addiction) %>% 
+  pull()
+
+Negbi_0 <- 
+  df %>% 
+  filter(negbi == 0) %>% 
+  select(addiction) %>% 
+  pull()
+
+fit1 <- t.test(Negbi_1, Negbi_0)
+fit1
+```
+
+###Association between negative emotion and participant's age
+```{r echo=FALSE}
+Negbi_1 <- 
+  df %>% 
+  filter(negbi == 1) %>% 
+  select(Age) %>% 
+  pull()
+
+Negbi_0 <- 
+  df %>% 
+  filter(negbi == 0) %>% 
+  select(Age) %>% 
+  pull()
+
+fit1 <- t.test(Negbi_1, Negbi_0)
+fit1
+```
+
+###Association between negative emotion and AgeAtFirstPhoneUse
+```{r echo=FALSE}
+Negbi_1 <- 
+  df %>% 
+  filter(negbi == 1) %>% 
+  select(AgeAtFirstPhoneUse) %>% 
+  pull()
+
+Negbi_0 <- 
+  df %>% 
+  filter(negbi == 0) %>% 
+  select(AgeAtFirstPhoneUse) %>% 
+  pull()
+
+fit1 <- t.test(Negbi_1, Negbi_0)
+fit1
+```
+
+###Association between negative emotion and the number of hours participant used phone on weekdays
+```{r echo=FALSE}
+Negbi_1 <- 
+  df %>% 
+  filter(negbi == 1) %>% 
+  select(WeekdaysPhoneUse) %>% 
+  pull()
+
+Negbi_0 <- 
+  df %>% 
+  filter(negbi == 0) %>% 
+  select(WeekdaysPhoneUse) %>% 
+  pull()
+
+fit1 <- t.test(Negbi_1, Negbi_0)
+fit1
+```
+
+###Association between negative emotion and number of hours participant used phone on a weekend day
+```{r echo=FALSE}
+Negbi_1 <- 
+  df %>% 
+  filter(negbi == 1) %>% 
+  select(WeekendPhoneUse) %>% 
+  pull()
+
+Negbi_0 <- 
+  df %>% 
+  filter(negbi == 0) %>% 
+  select(WeekendPhoneUse) %>% 
+  pull()
+
+fit1 <- t.test(Negbi_1, Negbi_0)
+fit1
+```
+
+### Association between gender and participant's score on addictive smartphone use
+```{r echo=FALSE}
+Gender_1 <- 
+  df %>% 
+  filter(gender == 1) %>% 
+  select(addiction) %>% 
+  pull()
+
+Gender_0 <- 
+  df %>% 
+  filter(gender == 0) %>% 
+  select(addiction) %>% 
+  pull()
+
+fit1 <- t.test(Gender_1, Gender_0)
+fit1
+```
+
+###Association between gender and the participant's age
+```{r echo=FALSE}
+Gender_1 <- 
+  df %>% 
+  filter(gender == 1) %>% 
+  select(Age) %>% 
+  pull()
+
+Gender_0 <- 
+  df %>% 
+  filter(gender == 0) %>% 
+  select(Age) %>% 
+  pull()
+
+fit1 <- t.test(Gender_1, Gender_0)
+fit1
+```
+
+###Association between gender and AgeAtFirstPhoneUse
+```{r echo=FALSE}
+Gender_1 <- 
+  df %>% 
+  filter(gender == 1) %>% 
+  select(AgeAtFirstPhoneUse) %>% 
+  pull()
+
+Gender_0 <- 
+  df %>% 
+  filter(gender == 0) %>% 
+  select(AgeAtFirstPhoneUse) %>% 
+  pull()
+
+fit1 <- t.test(Gender_1, Gender_0)
+fit1
+```
+
+###Association between gender and the number of hours participant used phone on a weekday
+```{r echo=FALSE}
+Gender_1 <- 
+  df %>% 
+  filter(gender == 1) %>% 
+  select(WeekdaysPhoneUse) %>% 
+  pull()
+
+Gender_0 <- 
+  df %>% 
+  filter(gender == 0) %>% 
+  select(WeekdaysPhoneUse) %>% 
+  pull()
+
+fit1 <- t.test(Gender_1, Gender_0)
+fit1
+```
+
+###Association between gender and the number of hours participant used phone on a weekend day
+```{r echo=FALSE}
+Gender_1 <- 
+  df %>% 
+  filter(gender == 1) %>% 
+  select(WeekendPhoneUse) %>% 
+  pull()
+
+Gender_0 <- 
+  df %>% 
+  filter(gender == 0) %>% 
+  select(WeekendPhoneUse) %>% 
+  pull()
+
+fit1 <- t.test(Gender_1, Gender_0)
+fit1
+```
+
+### Association between Hukou and Age
+```{r echo=FALSE}
+HukouAge <- aov(Age ~ Hukou, data = df)
+summary(HukouAge)
+```
+
+###Association between Hukou and AgeAtFirstPhoneUse
+```{r echo=FALSE}
+HukouAgeAtFirstPhoneUse <- aov(AgeAtFirstPhoneUse ~ Hukou, data = df)
+summary(HukouAgeAtFirstPhoneUse)
+```
+
+###Association between Hukou and addictive smartphone use
+```{r echo=FALSE}
+Hukouaddiction <- aov(addiction ~ Hukou, data = df)
+summary(Hukouaddiction)
+```
+
+###Association between Hukou and the number of hours participant used phone on a weekday
+```{r echo=FALSE}
+HukouWeekdaysPhoneUse <- aov(WeekdaysPhoneUse ~ Hukou, data = df)
+summary(HukouWeekdaysPhoneUse)
+```
+
+###Association between Hukou and the number of hours the participant used phone on a weekend day
+```{r echo=FALSE}
+HukouWeekendPhoneUse <- aov(WeekendPhoneUse ~ Hukou, data = df)
+summary(HukouWeekendPhoneUse)
+```
+
+### Association between Grade and Age
+```{r echo=FALSE}
+Grade_7 <- 
+  df %>% 
+  filter(Grade == 1) %>% 
+  select(Age) %>% 
+  pull()
+
+Grade_8 <- 
+  df %>% 
+  filter(Grade == 2) %>% 
+  select(Age) %>% 
+  pull()
+fit1 <- t.test(Grade_7, Grade_8)
+fit1
+```
+
+###Association between grade and AgeAtFirstPhoneUse
+```{r echo=FALSE}
+Grade_7 <- 
+  df %>% 
+  filter(Grade == 1) %>% 
+  select(AgeAtFirstPhoneUse) %>% 
+  pull()
+
+Grade_8 <- 
+  df %>% 
+  filter(Grade == 2) %>% 
+  select(AgeAtFirstPhoneUse) %>% 
+  pull()
+fit1 <- t.test(Grade_7, Grade_8)
+fit1
+```
+
+###Association between Grade and addictive smartphone use
+```{r echo=FALSE}
+Grade_7 <- 
+  df %>% 
+  filter(Grade == 1) %>% 
+  select(addiction) %>% 
+  pull()
+
+Grade_8 <- 
+  df %>% 
+  filter(Grade == 2) %>% 
+  select(addiction) %>% 
+  pull()
+fit1 <- t.test(Grade_7, Grade_8)
+fit1
+```
+
+###Association between Grade and number of hours the participant used phone on a weekday
+```{r echo=FALSE}
+Grade_7 <- 
+  df %>% 
+  filter(Grade == 1) %>% 
+  select(WeekdaysPhoneUse) %>% 
+  pull()
+
+Grade_8 <- 
+  df %>% 
+  filter(Grade == 2) %>% 
+  select(WeekdaysPhoneUse) %>% 
+  pull()
+fit1 <- t.test(Grade_7, Grade_8)
+fit1
+```
+
+###Association between Grade and the number of hours participant used phone on weekend days
+```{r echo=FALSE}
+Grade_7 <- 
+  df %>% 
+  filter(Grade == 1) %>% 
+  select(WeekendPhoneUse) %>% 
+  pull()
+
+Grade_8 <- 
+  df %>% 
+  filter(Grade == 2) %>% 
+  select(WeekendPhoneUse) %>% 
+  pull()
+fit1 <- t.test(Grade_7, Grade_8)
+fit1
+```
+
+## Association between two continuous variables
+```{r echo=FALSE}
+addiction_Age <- cor.test(df$addiction, df$Age, method = "pearson")
+addiction_Age
+
+addiction_AgeAtFirstPhoneUse <- cor.test(df$addiction, df$AgeAtFirstPhoneUse, method = "pearson")
+addiction_AgeAtFirstPhoneUse
+
+addiction_WeekdaysPhoneUse <- cor.test(df$addiction, df$WeekdaysPhoneUse, method = "pearson")
+addiction_WeekdaysPhoneUse
+
+addiction_WeekendPhoneUse <- cor.test(df$addiction, df$WeekendPhoneUse, method = "pearson")
+addiction_WeekendPhoneUse
+
+AgeAtFirstPhoneUse_Age <- cor.test(df$AgeAtFirstPhoneUse, df$Age, method = "pearson")
+AgeAtFirstPhoneUse_Age
+
+WeekdaysPhoneUse_Age <- cor.test(df$WeekdaysPhoneUse, df$Age, method = "pearson")
+WeekdaysPhoneUse_Age
+
+WeekendPhoneUse_Age <- cor.test(df$WeekendPhoneUse, df$Age, method = "pearson")
+WeekendPhoneUse_Age
+
+WeekdaysPhoneUse_AgeAtFirstPhoneUse <- cor.test(df$WeekdaysPhoneUse, df$AgeAtFirstPhoneUse, method = "pearson")
+WeekdaysPhoneUse_AgeAtFirstPhoneUse
+
+WeekendPhoneUse_Age <- cor.test(df$WeekendPhoneUse, df$AgeAtFirstPhoneUse, method = "pearson")
+WeekendPhoneUse_Age
+
+WeekdaysPhoneUse_WeekendPhoneUse <- cor.test(df$WeekdaysPhoneUse, df$WeekendPhoneUse, method = "pearson")
+WeekdaysPhoneUse_WeekendPhoneUse
+```
+
