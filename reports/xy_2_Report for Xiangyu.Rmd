@@ -1,0 +1,814 @@
+---
+title: "Data analysis report for Xiangyu Bu"
+author: "En Fu"
+date: "3/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(tidyverse)
+library(usdm)
+library(forcats)
+library(hrbrthemes)
+library(viridis)
+library(descr)
+library(lme4)
+library(GGally)
+```
+
+
+This report present data analysis results for the relationships among smartphone use motive, online social support, and experience of positive and negative emotions after smartphone use in adolescents.
+
+```{r, echo=FALSE, warning=FALSE}
+level1 <- read.csv(here("level1.csv"))
+level2 <- read.csv(here("level2.csv"))
+```
+
+```{r, echo=FALSE, warning=FALSE}
+level1 <- level1 %>% 
+  mutate(POS4.3 = rowMeans(level1[,c('po_interested','po_excited','po_proud')], na.rm=TRUE)) %>% 
+  mutate(NEG4.3 = rowMeans(level1[,c('ne_sad','ne_ashamed','ne_irritable','ne_nervous',
+                                     'ne_guilty','ne_scared','ne_afraid')], na.rm=TRUE)) %>% 
+  mutate(POS5.2 = rowMeans(level1[,c('UnhappyEvent_interested','UnhappyEvent_excited','UnhappyEvent_proud')], na.rm=TRUE)) %>% 
+  mutate(NEG5.2 = rowMeans(level1[,c('UnhappyEvent_sad','UnhappyEvent_ashamed','UnhappyEvent_irritable','UnhappyEvent_nervous',
+                                     'UnhappyEvent_guilty','UnhappyEvent_scared','UnhappyEvent_afraid')], na.rm=TRUE)) %>% 
+  mutate(POS6.2 = rowMeans(level1[,c('HappyEvent_interested','HappyEvent_excited','HappyEvent_proud')], na.rm=TRUE)) %>% 
+  mutate(NEG6.2 = rowMeans(level1[,c('HappyEvent_sad','HappyEvent_ashamed','HappyEvent_irritable','HappyEvent_nervous',
+                                     'HappyEvent_guilty','HappyEvent_scared','HappyEvent_afraid')], na.rm=TRUE)) %>% 
+  #recode a categorical variable into a new binary variable
+  mutate(UnhappySocial = case_when(UnhappyEvent == 21 ~ 1L,
+                                   UnhappyEvent == 22 ~ 1L,
+                                   UnhappyEvent == 23 ~ 1L,
+                                   UnhappyEvent == 11 ~ 0L,
+                                   UnhappyEvent == 12 ~ 0L,
+                                   UnhappyEvent == 13 ~ 0L,
+                                   UnhappyEvent == 3 ~ 0L,
+                                   UnhappyEvent == 4 ~ 0L)) %>% 
+  mutate(device5 = case_when(UnhappyEventRegulation_phone == 11 ~ 1L,
+                             UnhappyEventRegulation_phone == 12 ~ 0L,
+                             UnhappyEventRegulation_phone == 21 ~ 0L)) %>% 
+  mutate(HappySocial = case_when(HappyEvent == 21 ~ 1L,
+                                 HappyEvent == 22 ~ 1L,
+                                 HappyEvent == 23 ~ 1L,
+                                 HappyEvent == 11 ~ 0L,
+                                 HappyEvent == 12 ~ 0L,
+                                 HappyEvent == 13 ~ 0L,
+                                 HappyEvent == 3 ~ 0L,
+                                 HappyEvent == 4 ~ 0L)) %>% 
+  mutate(device6 = case_when(HappyEventRegulation_phone == 11 ~ 1L,
+                             HappyEventRegulation_phone == 12 ~ 0L,
+                             HappyEventRegulation_phone == 21 ~ 0L)) %>% 
+  mutate_if(is.list, as.factor)%>%
+  mutate(motive = case_when(FirstMotivation == 1 ~ "bored",
+                            FirstMotivation == 2 ~ "study",
+                            FirstMotivation == 3 ~ "emergency",
+                            FirstMotivation == 4 ~ "subconscious",
+                            FirstMotivation == 5 ~ "not in learning state",
+                            FirstMotivation == 6 ~ "bad mood")) %>% 
+  mutate(posbi = ifelse(POS4.3 <=1, 0L, 1L)) %>% 
+  mutate(negbi = ifelse(NEG4.3 <=1, 0L, 1L)) %>% 
+  mutate(pos = case_when(posbi == 1 ~ "Presence",
+                        posbi == 0 ~ "Absence")) %>% 
+  mutate(neg = case_when(negbi == 1 ~ "Presence",
+                       negbi == 0 ~ "Absence")) %>% 
+  mutate(motivef = factor(
+    motive,
+    levels = c("subconscious", "bored",  "study", "emergency", "not in learning state",  "bad mood")
+  ))
+
+
+#Level2 data processing: compute a variable from existing columns
+level2 <- level2 %>% 
+  mutate(online = rowMeans(level2[,c('OnlineSocialSupport1','OnlineSocialSupport2','OnlineSocialSupport3','OnlineSocialSupport4',
+                                     'OnlineSocialSupport5','OnlineSocialSupport6','OnlineSocialSupport7','OnlineSocialSupport8',
+                                     'OnlineSocialSupport9','OnlineSocialSupport10','OnlineSocialSupport11')], na.rm=TRUE)) %>% 
+  mutate(offline = rowMeans(level2[,c('OfflineSocialSupport1','OfflineSocialSupport2','OfflineSocialSupport3',
+                                      'OfflineSocialSupport4','OfflineSocialSupport5','OfflineSocialSupport6',
+                                      'OfflineSocialSupport7','OfflineSocialSupport8','OfflineSocialSupport9',
+                                      'OfflineSocialSupport10','OfflineSocialSupport11')], na.rm=TRUE)) %>% 
+  mutate(soAnxiety = rowMeans(level2[,c('SocialAnxiety1','SocialAnxiety2','SocialAnxiety3','SocialAnxiety4',
+                                        'SocialAnxiety5','SocialAnxiety6','SocialAnxiety7','SocialAnxiety8',
+                                        'SocialAnxiety9','SocialAnxiety10')], na.rm = TRUE)) %>% 
+  mutate(soEfficacy = rowMeans(level2[,c('SocialSelfEfficacy1','SocialSelfEfficacy2','SocialSelfEfficacy3','SocialSelfEfficacy4',
+                                         'SocialSelfEfficacy5','SocialSelfEfficacy6')], na.rm = TRUE)) %>% 
+  mutate(addiction = rowMeans(level2[,c('Addiction1','Addiction2','Addiction3','Addiction4','Addiction5',
+                                        'Addiction6','Addiction7','Addiction8','Addiction9','Addiction10')], na.rm = TRUE)) %>% 
+  mutate(paInvolve = rowMeans(level2[,c('ParentalSchoolInvolvement1','ParentalSchoolInvolvement2','ParentalSchoolInvolvement3',
+                                        'ParentalSchoolInvolvement4','ParentalSchoolInvolvement5','ParentalSchoolInvolvement6',
+                                        'ParentalSchoolInvolvement7','ParentalSchoolInvolvement8','ParentalSchoolInvolvement9',
+                                        'ParentalSchoolInvolvement10')], na.rm = TRUE)) %>% 
+  mutate(selfControl = rowMeans(level2[,c('SelfControl1','SelfControl2','SelfControl3','SelfControl4','SelfControl5',
+                                          'SelfControl6')], na.rm = TRUE)) %>% 
+  mutate(emoEfficacy = rowMeans(level2[,c('EmotionRegulationEfficacy1','EmotionRegulationEfficacy2','EmotionRegulationEfficacy3',
+                                          'EmotionRegulationEfficacy4','EmotionRegulationEfficacy5','EmotionRegulationEfficacy6',
+                                          'EmotionRegulationEfficacy7','EmotionRegulationEfficacy8','EmotionRegulationEfficacy9',
+                                          'EmotionRegulationEfficacy10','EmotionRegulationEfficacy11','EmotionRegulationEfficacy12')], na.rm = TRUE)) %>% 
+  mutate(gender = case_when(Gender == 1 ~ "Male",
+                        Gender == 2 ~ "Female")) %>% 
+  mutate(Grade = case_when(Gender == 1 ~ "7th grade",
+                        Gender == 2 ~ "8th grade")) %>% 
+  mutate(Hukou = case_when(Hukou == 1 ~ "ShenHu",
+                        Hukou == 2 ~ "notShenHu",
+                        Hukou == 3 ~ "dontKnow")) %>% 
+  mutate(HK = factor(
+    Hukou,
+    levels = c("ShenHu", "notShenHu",  "dontKnow")
+  ))
+
+#join certain level1 and level2 variables.
+df1 <-  level1 %>% 
+  dplyr::select(ID, POS4.3, NEG4.3, posbi, negbi, pos, neg, motivef, HappySocial:device6)
+
+df2 <- level2 %>% 
+  dplyr::select(ID, online, Age, Gender, gender, Grade, HK, AgeAtFirstPhoneUse, WeekdaysPhoneUse, WeekendPhoneUse, WeekdaysStudy, WeekendStudy)
+
+df <- df1 %>% 
+  dplyr::select(-HappySocial, -device6) %>% 
+  left_join(df2, by = "ID")
+
+df <- df %>% 
+  mutate(CAge = Age - mean(Age)) %>%
+  mutate(Conline = online - mean(online)) 
+```
+
+```{r, echo=FALSE, warning=FALSE}
+##################################################################
+#Below are some functions that we took from the pairs help file and
+#modified, or wrote ourselves. You need to copy and paste all these commands
+#into R. It is perhaps better not to try and understand what it all does.
+
+
+
+## put correlations on the panels,
+## with size proportional to the correlations.
+panel.cor <- function(x, y, digits=1, prefix="", cex.cor)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(0, 1, 0, 1))
+    r1=cor(x,y,use="pairwise.complete.obs")
+    r <- abs(cor(x, y,use="pairwise.complete.obs"))
+
+    txt <- format(c(r1, 0.123456789), digits=digits)[1]
+    txt <- paste(prefix, txt, sep="")
+    if(missing(cex.cor)) cex <- 0.9/strwidth(txt)
+    text(0.5, 0.5, txt, cex = cex * r)
+}
+
+panel.smooth2=function (x, y, col = par("col"), bg = NA, pch = par("pch"),
+    cex = 1, col.smooth = "red", span = 2/3, iter = 3, ...)
+{
+    points(x, y, pch = pch, col = col, bg = bg, cex = cex)
+    ok <- is.finite(x) & is.finite(y)
+    if (any(ok))
+        lines(stats::lowess(x[ok], y[ok], f = span, iter = iter),
+            col = 1, ...)
+}
+
+
+panel.lines2=function (x, y, col = par("col"), bg = NA, pch = par("pch"),
+    cex = 1, ...)
+{
+    points(x, y, pch = pch, col = col, bg = bg, cex = cex)
+    ok <- is.finite(x) & is.finite(y)
+    if (any(ok)){
+        tmp=lm(y[ok]~x[ok])
+        abline(tmp)}
+
+}
+
+
+panel.hist <- function(x, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(usr[1:2], 0, 1.5) )
+    h <- hist(x, plot = FALSE)
+    breaks <- h$breaks; nB <- length(breaks)
+    y <- h$counts; y <- y/max(y)
+    rect(breaks[-nB], 0, breaks[-1], y, col="white", ...)
+}
+
+#VIF
+myvif <- function(mod) {
+  v <- vcov(mod)
+  assign <- attributes(model.matrix(mod))$assign
+  if (names(coefficients(mod)[1]) == "(Intercept)") {
+    v <- v[-1, -1]
+    assign <- assign[-1]
+  } else warning("No intercept: vifs may not be sensible.")
+  terms <- labels(terms(mod))
+  n.terms <- length(terms)
+  if (n.terms < 2) stop("The model contains fewer than 2 terms")
+  if (length(assign) > dim(v)[1] ) {
+     diag(tmp_cor)<-0
+     if (any(tmp_cor==1.0)){
+        return("Sample size is too small, 100% collinearity is present")
+     } else {
+        return("Sample size is too small")
+     }
+  }
+  R <- cov2cor(v)
+  detR <- det(R)
+  result <- matrix(0, n.terms, 3)
+  rownames(result) <- terms
+  colnames(result) <- c("GVIF", "Df", "GVIF^(1/2Df)")
+  for (term in 1:n.terms) {
+    subs <- which(assign == term)
+    result[term, 1] <- det(as.matrix(R[subs, subs])) * det(as.matrix(R[-subs, -subs])) / detR
+    result[term, 2] <- length(subs)
+  }
+  if (all(result[, 2] == 1)) {
+    result <- data.frame(GVIF=result[, 1])
+  } else {
+    result[, 3] <- result[, 1]^(1/(2 * result[, 2]))
+  }
+  invisible(result)
+}
+
+corvif <- function(dataz) {
+    dataz <- as.data.frame(dataz)
+    #correlation part
+    cat("Correlations of the variables\n\n")
+    tmp_cor <- cor(dataz,use="complete.obs")
+    print(tmp_cor)
+
+    #vif part
+    form    <- formula(paste("fooy ~ ",paste(strsplit(names(dataz)," "),collapse=" + ")))
+    dataz   <- data.frame(fooy=1,dataz)
+    lm_mod  <- lm(form,dataz)
+
+    cat("\n\nVariance inflation factors\n\n")
+    print(myvif(lm_mod))
+}
+
+myvif <- function(mod) {
+  v <- vcov(mod)
+  assign <- attributes(model.matrix(mod))$assign
+  if (names(coefficients(mod)[1]) == "(Intercept)") {
+    v <- v[-1, -1]
+    assign <- assign[-1]
+  } else warning("No intercept: vifs may not be sensible.")
+  terms <- labels(terms(mod))
+  n.terms <- length(terms)
+  if (n.terms < 2) stop("The model contains fewer than 2 terms")
+  if (length(assign) > dim(v)[1] ) {
+     diag(tmp_cor)<-0
+     if (any(tmp_cor==1.0)){
+        return("Sample size is too small, 100% collinearity is present")
+     } else {
+        return("Sample size is too small")
+     }
+  }
+  R <- cov2cor(v)
+  detR <- det(R)
+  result <- matrix(0, n.terms, 3)
+  rownames(result) <- terms
+  colnames(result) <- c("GVIF", "Df", "GVIF^(1/2Df)")
+  for (term in 1:n.terms) {
+    subs <- which(assign == term)
+    result[term, 1] <- det(as.matrix(R[subs, subs])) * det(as.matrix(R[-subs, -subs])) / detR
+    result[term, 2] <- length(subs)
+  }
+  if (all(result[, 2] == 1)) {
+    result <- data.frame(GVIF=result[, 1])
+  } else {
+    result[, 3] <- result[, 1]^(1/(2 * result[, 2]))
+  }
+  invisible(result)
+}
+
+
+
+corvif <- function(dataz) {
+    dataz <- as.data.frame(dataz)
+    #correlation part
+    cat("Correlations of the variables\n\n")
+    tmp_cor <- cor(dataz,use="complete.obs")
+    print(tmp_cor)
+
+    #vif part
+    form    <- formula(paste("fooy ~ ",paste(strsplit(names(dataz)," "),collapse=" + ")))
+    dataz   <- data.frame(fooy=1,dataz)
+    lm_mod  <- lm(form,dataz)
+
+    cat("\n\nVariance inflation factors\n\n")
+    print(myvif(lm_mod))
+}
+
+
+```
+
+**Part1**  
+#Check for covariates and multicollinearity  
+
+##check for multicollinearity among the IVs
+```{r, echo=FALSE, warning=FALSE}
+data1 <- df %>% 
+  dplyr::select(posbi, online, Age)
+corvif(data1)
+
+data2 <- df %>% 
+  dplyr::select(negbi, online, Age)
+corvif(data2)
+```
+
+##check for covariates
+
+###Association between demographic variables and emotion experiences
+
+Frequency of male and female students reporting presence and absence of positive and negative emotions after smartphone use
+```{r, echo=FALSE, warning=FALSE}
+crosstab(df$gender, df$pos)
+chisq.test(df$gender,df$pos)
+crosstab(df$gender, df$neg)
+chisq.test(df$gender,df$neg)
+```
+
+
+Frequency of 7th and 8th grade students reporting presence and absence of positive and negative emotions after smartphone use
+```{r, echo=FALSE, warning=FALSE}
+crosstab(df$Grade, df$pos)
+chisq.test(df$Grade,df$pos)
+crosstab(df$Grade, df$neg)
+chisq.test(df$Grade,df$neg)
+```
+
+Frequency of Shenhu, nonShenhu, and students who didn't know their Hukou status reporting presence and absence of positive and negative emotions after smartphone use
+```{r, echo=FALSE, warning=FALSE}
+crosstab(df$HK, df$pos)
+chisq.test(df$HK,df$pos)
+crosstab(df$HK, df$neg)
+chisq.test(df$HK,df$neg)
+```
+
+Distribution of the presence of positive and negative emotions after smartphone use across different age groups
+```{r, echo=FALSE, warning=FALSE}
+positive <- df %>%
+  filter(posbi == 1)
+x1 <- positive$Age
+
+negative <- df %>%
+  filter(negbi == 1)
+x2 <- negative$Age
+
+par(mfrow=c(2,1))
+
+par(mar=c(0,5,3,3))
+hist(x1, main="", xlim=c(11,16), ylab="Frequency for positive emotion after smartphone use", xlab="", ylim=c(0, 240), xaxt="n", las=1, col="slateblue1", breaks=10)
+par(mar=c(5,5,0,3))
+hist(x2, main="", xlim=c(11,16), ylab="Frequency for negative emotion after smartphone use", xlab="Age", ylim=c(240,0), las=1, col="tomato3", breaks=10)
+```
+
+Age difference in those who experienced positive emotion after smartphone use versus those who didn't
+```{r, echo=FALSE, warning=FALSE}
+
+positive_1 <- 
+  df %>% 
+  filter(posbi == 1) %>% 
+  dplyr::select(Age) %>% 
+  pull()
+
+positive_0 <- 
+  df %>% 
+  filter(posbi == 0) %>% 
+  dplyr::select(Age) %>% 
+  pull()
+
+fit1 <- t.test(positive_1, positive_0)
+fit1
+
+group_by(df, pos) %>% 
+  summarise(
+    count = n(),
+    `mean(Age)` = sprintf("%0.2f", mean(Age)),
+    sd = sd(Age, na.rm = TRUE)
+  )
+```
+
+Age difference in those who experienced negative emotion after smartphone use versus those who didn't
+```{r, echo=FALSE, warning=FALSE}
+negative_1 <- 
+  df %>% 
+  filter(negbi == 1) %>% 
+  dplyr::select(Age) %>% 
+  pull()
+
+negative_0 <- 
+  df %>% 
+  filter(negbi == 0) %>% 
+  dplyr::select(Age) %>% 
+  pull()
+
+fit1 <- t.test(negative_1, negative_0)
+fit1
+
+group_by(df, neg) %>% 
+  summarise(
+    count = n(),
+    `mean(Age)` = sprintf("%0.2f", mean(Age)),
+    sd = sd(Age, na.rm = TRUE)
+  )
+```
+
+
+
+**Part2**  
+#Sample Characteristics  
+
+##Demographic characteristics and phone use behaviors of the sample
+```{r, echo=FALSE, warning=FALSE}
+w1 = table(df$Age)
+t1 = as.data.frame(w1)
+names(t1)[1] = "Age"
+t1
+
+w2 = table(df$gender)
+t2 = as.data.frame(w2)
+names(t2)[1] = "Gender"
+t2
+
+w3 = table(df$Grade)
+t3 = as.data.frame(w3)
+names(t3)[1] = "Grade"
+t3
+
+w4 = table(df$HK)
+t4 = as.data.frame(w4)
+names(t4)[1] = "HuKou"
+t4
+
+w5 = table(df$AgeAtFirstPhoneUse)
+t5 = as.data.frame(w5)
+names(t5)[1] = "Age at first phone use"
+t5
+
+w6 = table(df$WeekdaysPhoneUse)
+t6 = as.data.frame(w6)
+names(t6)[1] = "Hours of using phone on weekdays"
+t6
+
+w7 = table(df$WeekendPhoneUse)
+t7 = as.data.frame(w7)
+names(t7)[1] = "Hours of using phone on weekends"
+t7
+
+w8 = table(df$WeekdaysStudy)
+t8 = as.data.frame(w8)
+names(t8)[1] = "Hours of study on weekdays"
+t8
+
+w9 = table(df$WeekendStudy)
+t9 = as.data.frame(w9)
+names(t9)[1] = "Hours of study on weekends"
+t9
+```
+
+Comparing hours of study and smartphone use on weekdays and weekends:
+```{r, echo=FALSE, warning=FALSE}
+#create a dataframe by selecting the four variables from df
+data <- df %>% 
+  dplyr::select(WeekdaysPhoneUse, WeekendPhoneUse, WeekdaysStudy, WeekendStudy) %>% 
+  filter(WeekdaysPhoneUse < 24) %>% 
+  filter(WeekendPhoneUse < 24) %>% 
+  filter(WeekendStudy < 24) %>% 
+  filter(WeekdaysStudy < 24) %>% 
+#Data is at wide format, we need to make it 'tidy' or 'long'
+  gather(key = "Behavior", value = "value") %>% 
+  mutate(Behavior = gsub("\\.", "", Behavior)) %>% 
+  mutate(value = round(as.numeric(value),0)) %>% 
+  filter(Behavior %in% c("WeekdaysPhoneUse","WeekendPhoneUse","WeekdaysStudy","WeekendStudy"))
+
+# Multiple dencity charts with transparency
+p2 <- ggplot(data=data, aes(x=value, group=Behavior, fill=Behavior)) +
+    geom_density(adjust=1.5, alpha=.4) +
+    theme_ipsum()+
+    xlab("Hours")+
+  ylab("Frequency")
+p2
+```
+
+Comparing age at survey and age at first smartphone use
+```{r, echo=FALSE, warning=FALSE}
+#create a dataframe by selecting the four variables from df
+data <- df %>% 
+  dplyr::select(Age, AgeAtFirstPhoneUse) %>% 
+  filter(AgeAtFirstPhoneUse < Age) %>% 
+#Data is at wide format, we need to make it 'tidy' or 'long'
+  gather(key = "characteristic", value = "value") %>% 
+  mutate(characteristic = gsub("\\.", "", characteristic)) %>% 
+  mutate(value = round(as.numeric(value),0)) %>% 
+  filter(characteristic %in% c("Age","AgeAtFirstPhoneUse"))
+
+# Multiple dencity charts with transparency
+p2 <- ggplot(data=data, aes(x=value, group=characteristic, fill=characteristic)) +
+    geom_density(adjust=1.5, alpha=.4) +
+    theme_ipsum()+
+    xlab("Age")+
+  ylab("Frequency")
+p2
+```
+
+
+##Emotion experience after smartphone use
+```{r, echo=FALSE, warning=FALSE}
+emotion <- df %>% 
+  dplyr::select(POS4.3, NEG4.3)
+
+p <- ggplot(emotion, aes(x=x)) +
+  geom_density( aes(x=POS4.3, y=..density..), fill="#69b3a2") +
+  geom_label( aes(x=4.5, y=0.25, label="Positive emotions"), color="#69b3a2") +
+  geom_density( aes(x=NEG4.3, y=-..density..), fill="#404080") +
+  geom_label( aes(x=4.5, y=-0.25, label="Negative emotions"), color="#404080") +
+  theme_ipsum() +
+  xlab("Strong")
+
+p
+```
+
+Since majority of the participants responded "none" on both positive and negative emotion experience after smartphone use, we recoded their emotion experience so that both positive and negative emotions are binary variables: absence or 0 if the participant chose "none", presence or 1 for all other responses.
+
+
+**Part3**  
+#Statistical analyses  
+
+##Descriptive statistics
+
+Gender disparity on online social support:
+```{r, echo=FALSE, warning=FALSE}
+gender_1 <- 
+  df %>% 
+  filter(Gender == 1) %>% 
+  dplyr::select(online) %>% 
+  pull()
+
+gender_0 <- 
+  df %>% 
+  filter(Gender == 2) %>% 
+  dplyr::select(online) %>% 
+  pull()
+
+fit1 <- t.test(gender_1, gender_0)
+fit1
+
+group_by(df, gender) %>% 
+  summarise(
+    count = n(),
+    `mean(online)` = sprintf("%0.2f", mean(online)),
+    sd = sd(online, na.rm = TRUE)
+  )
+```
+
+Gender disparity on age
+```{r, echo=FALSE, warning=FALSE}
+gender_1 <- 
+  df %>% 
+  filter(Gender == 1) %>% 
+  dplyr::select(Age) %>% 
+  pull()
+
+gender_0 <- 
+  df %>% 
+  filter(Gender == 2) %>% 
+  dplyr::select(Age) %>% 
+  pull()
+
+fit1 <- t.test(gender_1, gender_0)
+fit1
+
+group_by(df, gender) %>% 
+  summarise(
+    count = n(),
+    `mean(Age)` = sprintf("%0.2f", mean(Age)),
+    sd = sd(Age, na.rm = TRUE)
+  )
+```
+
+
+Association between online social support and smartphone use motive
+```{r, echo=FALSE, warning=FALSE}
+onlineMotive <- aov(online ~ motivef, data = df)
+summary(onlineMotive)
+
+group_by(df, motivef) %>% 
+  summarise(
+    count = n(),
+    `mean(online)` = sprintf("%0.2f", mean(online)),
+    sd = sd(online, na.rm = TRUE)
+  )
+```
+
+Association between age and smartphone use motive
+```{r, echo=FALSE, warning=FALSE}
+ageMotive <- aov(Age ~ motivef, data = df)
+summary(ageMotive)
+
+group_by(df, motivef) %>% 
+  summarise(
+    count = n(),
+    `mean(Age)` = sprintf("%0.2f", mean(Age)),
+    sd = sd(Age, na.rm = TRUE)
+  )
+```
+
+Association between online social support and HuKou
+```{r, echo=FALSE, warning=FALSE}
+onlineHK <- aov(online ~ HK, data = df)
+summary(onlineHK)
+
+group_by(df, HK) %>% 
+  summarise(
+    count = n(),
+    `mean(online)` = sprintf("%0.2f", mean(online)),
+    sd = sd(online, na.rm = TRUE)
+  )
+```
+
+Association between age and HuKou
+```{r, echo=FALSE, warning=FALSE}
+ageHK <- aov(Age ~ HK, data = df)
+summary(ageHK)
+
+group_by(df, HK) %>% 
+  summarise(
+    count = n(),
+    `mean(Age)` = sprintf("%0.2f", mean(Age)),
+    sd = sd(Age, na.rm = TRUE)
+  )
+```
+
+Association between grade and online social support
+```{r, echo=FALSE, warning=FALSE}
+grade_1 <- 
+  df %>% 
+  filter(Grade == "7th grade") %>% 
+  dplyr::select(online) %>% 
+  pull()
+
+grade_0 <- 
+  df %>% 
+  filter(Grade == "8th grade") %>% 
+  dplyr::select(online) %>% 
+  pull()
+
+fit1 <- t.test(grade_1, grade_0)
+fit1
+
+group_by(df, Grade) %>% 
+  summarise(
+    count = n(),
+    `mean(online)` = sprintf("%0.2f", mean(online)),
+    sd = sd(online, na.rm = TRUE)
+  )
+```
+
+###Graph the gender disparity on smartphone use motivation, age, and online social support
+```{r, echo=FALSE, warning=FALSE}
+data <- df %>% 
+  dplyr::select(gender, online, Age, motivef)
+ggpairs(data, columns = 2:4, ggplot2::aes(colour=gender))
+```
+
+##Inferential statistics
+
+#Logistic Multilevel Modeling
+note: We used age and gender as covariates because 1) both age and gender were significantly associated with the DVs; 2) there were too many missing values on HuKou thus exclude them would reduce estimation power; 3) Grade is intrinsically associated with age thus including either would be sufficient.
+```{r, echo=FALSE, warning=FALSE}
+set <- df %>%
+  filter(!is.na(Conline)) %>% 
+  filter(!is.na(motivef)) %>% 
+  filter(!is.na(CAge)) %>% 
+  filter(!is.na(gender)) %>% 
+  filter(!is.na(Grade))
+
+#DV = positive emotions, data = set1
+```
+
+##First set of models: predicting the presence of positive emotions with smartphone use motive, online social support, and demographic covariates.
+Model0: no IV, odds ratio represent the percentage of students experienced positive emotions after smartphone use:
+```{r, echo=FALSE, warning=FALSE}
+m0 <- glmer(posbi ~ (1 | ID),
+            data = set,
+            family = binomial(link = "logit"),
+            control=glmerControl(optimizer = "bobyqa"),
+            nAGQ = 0)
+summary(m0)
+exp(fixef(m0))
+```
+
+Model1: add covariates and level1 IV
+```{r, echo=FALSE, warning=FALSE}
+m1 <- glmer(posbi ~ CAge + gender +
+              motivef + (1 | ID),
+            data = set,
+            family = binomial(link = "logit"),
+            control=glmerControl(optimizer = "bobyqa"),
+            nAGQ = 0)
+summary(m1)
+exp(fixef(m1))
+```
+
+Model2: add level2 IV
+```{r, echo=FALSE, warning=FALSE}
+m2 <- glmer(posbi ~ CAge + gender +
+              motivef + Conline + (1|ID),
+            data = set,
+            family = binomial(link = "logit"),
+            control=glmerControl(optimizer = "bobyqa"),
+            nAGQ = 0)
+summary(m2)
+exp(fixef(m2))
+```
+
+Model3: add cross-level interaction term
+```{r, echo=FALSE, warning=FALSE}
+m3 <- glmer(posbi ~ CAge + gender + 
+              motivef + Conline + motivef*Conline + (1|ID),
+            data = set,
+            family = binomial(link = "logit"),
+            control=glmerControl(optimizer = "bobyqa"),
+            nAGQ = 0)
+summary(m3)
+exp(fixef(m3))
+```
+
+Compare the 4 models to decide the best model:
+```{r, echo=FALSE, warning=FALSE}
+anova(m0, m1)
+anova(m1, m2)
+anova(m2, m3)
+```
+Therefore, model3 is the best model to fit the data.
+
+###Graph the association between online social support and presence of positive emotions after smartphone use, grouped by smartphone use motive.
+```{r, echo=FALSE, warning=FALSE}
+pos <- ggplot(df, aes(x = online, y = posbi)) + 
+  geom_point(color="red", position = position_jitter(height = .02)) +
+  geom_smooth(mapping = aes(colour = motivef),
+              method="glm", method.args=list(family="binomial"))+
+  xlab("Online social support")+ ylab("Presence of positive emotions")
+print(pos)
+```
+
+##Second set of models: predicting the presence of negative emotions with smartphone use motive, online social support, and demographic covariates.
+Model0: no IV, odds ratio represent the percentage of students experienced negative emotions after smartphone use:
+```{r, echo=FALSE, warning=FALSE}
+###DV: negative emotions
+m0 <- glmer(negbi ~ (1 | ID),
+            data = set,
+            family = binomial(link = "logit"),
+            control=glmerControl(optimizer = "bobyqa"),
+            nAGQ = 0)
+summary(m0)
+exp(fixef(m0))
+```
+
+Model1: add demographic covariates and level1 IV to the model:
+```{r, echo=FALSE, warning=FALSE}
+m1 <- glmer(negbi ~ CAge + gender + motivef + (1 | ID),
+            data = set,
+            family = binomial(link = "logit"),
+            control=glmerControl(optimizer = "bobyqa"), nAGQ = 0)
+summary(m1)
+exp(fixef(m1))
+```
+
+Model2: add level2 IV to the model:
+```{r, echo=FALSE, warning=FALSE}
+m2 <- glmer(negbi ~ CAge + gender + motivef + Conline + (1|ID),
+            data = set,
+            family = binomial(link = "logit"),
+            control=glmerControl(optimizer = "bobyqa"), nAGQ = 0)
+summary(m2)
+exp(fixef(m2))
+```
+
+Model3: add cross-level interaction term to the model:
+```{r, echo=FALSE, warning=FALSE}
+m3 <- glmer(negbi ~ CAge + gender + motivef + Conline + motivef*Conline + (1|ID),
+            data = set,
+            family = binomial(link = "logit"),
+            control=glmerControl(optimizer = "bobyqa"), nAGQ = 0)
+summary(m3)
+exp(fixef(m3))
+```
+
+compare the 4 models to choose the best one:
+```{r, echo=FALSE, warning=FALSE}
+anova(m0, m1)
+anova(m1, m2)
+anova(m2, m3)
+```
+Therefore, model3 is the best model to fit the data.
+
+###Graph the association between online social support and presence of positive emotions after smartphone use, grouped by smartphone use motive.
+```{r, echo=FALSE, warning=FALSE}
+neg <- ggplot(df, aes(x = online, y = negbi)) + 
+  geom_point(color="red", position = position_jitter(height = .02)) +
+  geom_smooth(mapping = aes(colour = motivef),
+              method="glm", method.args=list(family="binomial"))+
+  xlab("Online social support")+ ylab("Presence of negative emotions")
+print(neg)
+```
+
+
