@@ -20,3 +20,6 @@ Solution: recode a into A, recode b into B, recode c into C, recode d into D, re
 
 Problem: this was a 15-day daily diary study but some participants only provided valid data for 0 day or 1 day.
 Solution: delete those participants from level1 data.
+
+Problem: detect an error in value labeling. Specifically, the researcher detect more than 90% missing data on a level 2 variable "HabitUsage" and asked an research assistant to inspect that variable. A few days later, that research assistant replied saying that she miscoded that HabitUsage variable by using the same value label with another level1 variable DailyUsage.
+Solution: Daily_social was coded "1" for using smartphone for social activities primarily and coded "0" for all other primary smartphone activiteis; similar data entry rule for Daily_entertainment, Daily_gaming, and Daily_study. However, the level2 variable HabitUsage_social was coded "1" for being the primary smartphone usage, coded "2" for being the secondary smartphone usage, coded "3" for being the third smartphone usage, and coded "4" for being the fourth smartphone usage.
